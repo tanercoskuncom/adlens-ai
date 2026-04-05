@@ -1,3 +1,18 @@
+export interface CampaignMetrics {
+  spend?: number;
+  impressions?: number;
+  reach?: number;
+  clicks?: number;
+  ctr?: number;
+  cpc?: number;
+  cpm?: number;
+  roas?: number;
+  conversions?: number;
+  costPerResult?: number;
+  frequency?: number;
+  conversionValue?: number;
+}
+
 export interface CampaignAnalysis {
   campaignName: string;
   score: number;
@@ -7,6 +22,7 @@ export interface CampaignAnalysis {
   strengths: string[];
   weaknesses: string[];
   anomalies: string[];
+  metrics?: CampaignMetrics;
   benchmarkComparison?: {
     roas: string;
     ctr: string;

@@ -64,6 +64,28 @@ export async function POST(req: NextRequest) {
       language,
     });
 
+    // Ham metrikleri kampanya analizlerine ekle
+    for (const ca of result.campaignAnalyses) {
+      const match = campaigns.find(
+        (c) => c.name === ca.campaignName
+      );
+      if (match) {
+        ca.metrics = {
+          spend: Number(match.metrics.spend) || 0,
+          impressions: Number(match.metrics.impressions) || 0,
+          reach: Number(match.metrics.reach) || 0,
+          clicks: Number(match.metrics.clicks) || 0,
+          ctr: Number(match.metrics.ctr) || 0,
+          cpc: Number(match.metrics.cpc) || 0,
+          cpm: Number(match.metrics.cpm) || 0,
+          roas: Number(match.metrics.roas) || 0,
+          conversions: Number(match.metrics.results || match.metrics.conversions) || 0,
+          costPerResult: Number(match.metrics.costPerResult) || 0,
+          frequency: Number(match.metrics.frequency) || 0,
+        };
+      }
+    }
+
     // DB bağlıysa sonucu veritabanına da kaydet
     let dbSessionId: string | null = null;
     try {
