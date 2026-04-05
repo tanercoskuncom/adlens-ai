@@ -57,12 +57,27 @@ export function detectPlatformFromHeaders(headers: string[]): Platform {
 
 export function detectPlatformFromBuffer(buffer: ArrayBuffer): Platform {
   const workbook = XLSX.read(buffer, { type: "array" });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+  // Raw Data sheet'i tercih et
+  let sheetName = workbook.SheetNames[0];
+  for (const name of workbook.SheetNames) {
+    if (name.toLowerCase().includes("raw")) {
+      sheetName = name;
+      break;
+    }
+  }
+
+  const sheet = workbook.Sheets[sheetName];
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as string[][];
 
-  if (!rows[0]) return "UNKNOWN";
+  // İlk 10 satırda header'ı ara
+  for (let i = 0; i < Math.min(10, rows.length); i++) {
+    if (!rows[i]) continue;
+    const result = detectPlatformFromHeaders(rows[i]);
+    if (result !== "UNKNOWN") return result;
+  }
 
-  return detectPlatformFromHeaders(rows[0]);
+  return "UNKNOWN";
 }
 
 export function detectPlatformFromFile(file: File): Promise<Platform> {
