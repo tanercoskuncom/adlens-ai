@@ -3,24 +3,43 @@ import type { Platform } from "@/types/campaign";
 
 const META_COLUMNS = [
   "campaign name",
+  "kampanya adı",
   "ad set name",
+  "reklam seti adı",
   "ad name",
+  "reklam adı",
   "reach",
+  "erişim",
   "frequency",
+  "sıklık",
   "results",
+  "alışverişler",
   "cost per result",
+  "alışveriş başına ücret",
+  "amount spent (try)",
+  "harcanan tutar (try)",
+  "purchase roas",
   "roas",
+  "cpm (1000 gösterim başına ücret)",
 ];
 
 const GOOGLE_COLUMNS = [
   "campaign",
+  "kampanya",
   "ad group",
+  "reklam grubu",
   "impressions",
+  "görüntülenme",
   "clicks",
+  "tıklamalar",
   "avg. cpc",
+  "ort. tbm",
   "conversions",
+  "dönüşümler",
   "conv. rate",
-  "impression share",
+  "dön. oranı",
+  "search impr. share",
+  "görüntülenme payı",
 ];
 
 export function detectPlatformFromHeaders(headers: string[]): Platform {
