@@ -41,8 +41,8 @@ export default function HistoryPage() {
         const match =
           a.clientName.toLowerCase().includes(q) ||
           a.fileName.toLowerCase().includes(q) ||
-          a.result.campaignAnalyses.some((c) =>
-            c.campaignName.toLowerCase().includes(q)
+          (a.result.campaignAnalyses ?? []).some((c) =>
+            (c.campaignName ?? "").toLowerCase().includes(q)
           );
         if (!match) return false;
       }

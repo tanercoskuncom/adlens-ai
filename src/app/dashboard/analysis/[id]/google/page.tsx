@@ -59,8 +59,8 @@ export default function GoogleDetailPage() {
   const hasGoogle = platform === "GOOGLE" || platform === "BOTH";
 
   // Google kampanyalarını filtrele
-  const googleCampaigns = result.campaignAnalyses.filter((c) => {
-    const name = c.campaignName.toLowerCase();
+  const googleCampaigns = (result.campaignAnalyses ?? []).filter((c) => {
+    const name = (c.campaignName ?? "").toLowerCase();
     return (
       name.includes("google") ||
       name.includes("search") ||

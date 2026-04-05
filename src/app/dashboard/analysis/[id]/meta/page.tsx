@@ -59,8 +59,8 @@ export default function MetaDetailPage() {
   const hasGoogle = platform === "GOOGLE" || platform === "BOTH";
 
   // Meta kampanyalarını filtrele (kampanya adında Meta/Facebook ipuçları veya Google olmayan)
-  const metaCampaigns = result.campaignAnalyses.filter((c) => {
-    const name = c.campaignName.toLowerCase();
+  const metaCampaigns = (result.campaignAnalyses ?? []).filter((c) => {
+    const name = (c.campaignName ?? "").toLowerCase();
     const isGoogle =
       name.includes("google") ||
       name.includes("search") ||

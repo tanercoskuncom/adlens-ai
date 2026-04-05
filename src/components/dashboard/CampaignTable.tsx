@@ -67,7 +67,7 @@ export function CampaignTable({ campaigns, onCampaignClick }: CampaignTableProps
 
   const sorted = [...campaigns].sort((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1;
-    if (sortKey === "campaignName") return a.campaignName.localeCompare(b.campaignName) * dir;
+    if (sortKey === "campaignName") return (a.campaignName ?? "").localeCompare(b.campaignName ?? "") * dir;
     if (sortKey === "score") return (a.score - b.score) * dir;
     return a.status.localeCompare(b.status) * dir;
   });

@@ -66,8 +66,8 @@ function filterByPlatform(
   campaigns: CampaignAnalysis[],
   platform: "meta" | "google"
 ): CampaignAnalysis[] {
-  return campaigns.filter((c) => {
-    const name = c.campaignName.toLowerCase();
+  return (campaigns ?? []).filter((c) => {
+    const name = (c.campaignName ?? "").toLowerCase();
     const isGoogle =
       name.includes("google") ||
       name.includes("search") ||
