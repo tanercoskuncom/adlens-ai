@@ -25,6 +25,17 @@ function findHeaderRow(rawRows: unknown[][]): number {
   return 0;
 }
 
+/**
+ * Sayısal değere dönüştür. TRY/USD/$/%/boşluk temizle, virgülü noktaya çevir.
+ */
+function toNum(val: unknown): number {
+  if (val == null || val === "") return 0;
+  if (typeof val === "number") return val;
+  const cleaned = String(val).replace(/[%,$₺\s]/g, "").replace(",", ".");
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -93,43 +104,168 @@ export async function POST(req: NextRequest) {
 
     const normalizedRows = normalizeSheet(rows, platform);
 
-    // Kampanya bazlı toplama — sadece kampanya toplam satırlarını al
-    // Meta hiyerarşisi: Kampanya Adı dolu + Reklam Seti = "All" → toplam satır
-    const campaignMap = new Map<string, Record<string, unknown>>();
+    // ─── Kampanya bazlı aggregation ───
+    // Meta "Ayrıntılı Rapor" formatında her satır kırılım detayıdır (yaş, cinsiyet, gün).
+    // Spend/reach/impressions sadece genel toplam satırında olabilir, alt kırılımlarda boş.
+    // Toplanabilir metrikler: clicks, conversions, cartAdds
+    // Toplam satır: kampanya adı boş = genel toplam
+
+    const campaignAgg = new Map<string, {
+      spend: number;
+      reach: number;
+      impressions: number;
+      clicks: number;
+      conversions: number;
+      conversionValue: number;
+      costPerResult: number;
+      frequency: number;
+      ctr: number;
+      cpc: number;
+      cpm: number;
+      roas: number;
+      results: number;
+      cartAdds: number;
+      rowCount: number;
+      objective: string;
+    }>();
+
+    // Genel toplam satırını bul (kampanya adı boş ama metrikler dolu)
+    let grandTotal: Record<string, unknown> | null = null;
 
     for (const row of normalizedRows) {
       const name = String(row.campaignName ?? "").trim();
-      if (!name) continue;
 
-      const adSetName = String(row.adSetName ?? "").trim();
+      // Kampanya adı boş + spend dolu = genel toplam satırı
+      if (!name) {
+        if (toNum(row.spend) > 0 || toNum(row.impressions) > 0) {
+          grandTotal = row;
+        }
+        continue;
+      }
 
-      // Eğer reklam seti "All" veya boş ise bu kampanya toplam satırı
-      const isCampaignTotal =
-        adSetName === "" ||
-        adSetName.toLowerCase() === "all" ||
-        adSetName === name;
+      if (!campaignAgg.has(name)) {
+        campaignAgg.set(name, {
+          spend: 0, reach: 0, impressions: 0, clicks: 0,
+          conversions: 0, conversionValue: 0, costPerResult: 0,
+          frequency: 0, ctr: 0, cpc: 0, cpm: 0, roas: 0,
+          results: 0, cartAdds: 0, rowCount: 0, objective: "",
+        });
+      }
 
-      if (isCampaignTotal && !campaignMap.has(name)) {
-        campaignMap.set(name, row);
+      const agg = campaignAgg.get(name)!;
+
+      // Toplama: her satırdaki dolu metrikleri topla
+      agg.spend += toNum(row.spend);
+      agg.reach += toNum(row.reach);
+      agg.impressions += toNum(row.impressions);
+      agg.clicks += toNum(row.clicks);
+      agg.conversions += toNum(row.results);
+      agg.conversionValue += toNum(row.conversionValue);
+      agg.cartAdds += toNum(row.cartAdds);
+      agg.rowCount++;
+
+      // Objective - normalized row'dan al
+      if (!agg.objective) {
+        const obj = String(row.objective ?? "").trim();
+        if (obj) agg.objective = obj;
+      }
+
+      // Eğer satırda direkt spend/reach/impressions varsa (non-detail format)
+      // bunlar zaten toplanıyor.
+      // Oran metrikleri (ctr, cpc, cpm, roas, frequency) sadece toplam satırlarından al
+      if (toNum(row.spend) > 0) {
+        // Bu satırda spend varsa, oran metrikleri de geçerli
+        if (toNum(row.ctr) > 0) agg.ctr = toNum(row.ctr);
+        if (toNum(row.cpc) > 0) agg.cpc = toNum(row.cpc);
+        if (toNum(row.cpm) > 0) agg.cpm = toNum(row.cpm);
+        if (toNum(row.roas) > 0) agg.roas = toNum(row.roas);
+        if (toNum(row.frequency) > 0) agg.frequency = toNum(row.frequency);
+        if (toNum(row.costPerResult) > 0) agg.costPerResult = toNum(row.costPerResult);
       }
     }
 
-    // Eğer hiç kampanya toplam satırı bulunamadıysa, tüm satırları kampanya bazlı topla
-    if (campaignMap.size === 0) {
-      for (const row of normalizedRows) {
-        const name = String(row.campaignName ?? "").trim();
-        if (!name) continue;
-        if (!campaignMap.has(name)) {
-          campaignMap.set(name, row);
+    // Eğer kampanyaların spend'i 0 ama genel toplam varsa,
+    // mevcut metriklerden oransal dağıtım yap
+    if (grandTotal && campaignAgg.size > 0) {
+      const totalSpend = toNum(grandTotal.spend);
+      const totalReach = toNum(grandTotal.reach);
+      const totalImpressions = toNum(grandTotal.impressions);
+      const totalFrequency = toNum(grandTotal.frequency);
+      const totalConversions = toNum(grandTotal.results);
+      const totalConvValue = toNum(grandTotal.conversionValue);
+      const totalCostPerResult = toNum(grandTotal.costPerResult);
+
+      // Kampanyaların toplam click'ini hesapla
+      let allClicks = 0;
+      for (const agg of campaignAgg.values()) {
+        allClicks += agg.clicks;
+      }
+
+      // Toplam conversion'larını hesapla
+      let allConversions = 0;
+      for (const agg of campaignAgg.values()) {
+        allConversions += agg.conversions;
+      }
+
+      for (const agg of campaignAgg.values()) {
+        // Eğer spend 0 ise, click oranına göre dağıt
+        if (agg.spend === 0 && totalSpend > 0 && allClicks > 0) {
+          const ratio = agg.clicks / allClicks;
+          agg.spend = Math.round(totalSpend * ratio * 100) / 100;
+          agg.reach = Math.round(totalReach * ratio);
+          agg.impressions = Math.round(totalImpressions * ratio);
+        }
+
+        // Oran metriklerini hesapla
+        if (agg.spend > 0 && agg.impressions > 0) {
+          agg.cpm = (agg.spend / agg.impressions) * 1000;
+        }
+        if (agg.spend > 0 && agg.clicks > 0) {
+          agg.cpc = agg.spend / agg.clicks;
+        }
+        if (agg.impressions > 0 && agg.clicks > 0) {
+          agg.ctr = (agg.clicks / agg.impressions) * 100;
+        }
+        if (agg.reach > 0 && agg.impressions > 0) {
+          agg.frequency = agg.impressions / agg.reach;
+        }
+        if (agg.spend > 0 && agg.conversionValue > 0) {
+          agg.roas = agg.conversionValue / agg.spend;
+        }
+        // Eğer conversionValue yoksa ama genel toplam ROAS varsa
+        if (agg.roas === 0 && totalSpend > 0 && totalConvValue > 0 && agg.conversions > 0 && allConversions > 0) {
+          const convRatio = agg.conversions / allConversions;
+          agg.conversionValue = Math.round(totalConvValue * convRatio * 100) / 100;
+          agg.roas = agg.spend > 0 ? agg.conversionValue / agg.spend : 0;
+        }
+        if (agg.conversions > 0 && agg.spend > 0) {
+          agg.costPerResult = agg.spend / agg.conversions;
         }
       }
     }
 
-    const campaigns: CampaignData[] = Array.from(campaignMap.entries()).map(
-      ([name, metrics]) => ({
+    // Kampanyaları oluştur
+    const campaigns: CampaignData[] = Array.from(campaignAgg.entries()).map(
+      ([name, agg]) => ({
         name,
         platform,
-        metrics: metrics as Record<string, number | string>,
+        metrics: {
+          spend: agg.spend,
+          reach: agg.reach,
+          impressions: agg.impressions,
+          clicks: agg.clicks,
+          ctr: agg.ctr,
+          cpc: agg.cpc,
+          cpm: agg.cpm,
+          roas: agg.roas,
+          results: agg.conversions,
+          conversions: agg.conversions,
+          costPerResult: agg.costPerResult,
+          frequency: agg.frequency,
+          conversionValue: agg.conversionValue,
+          cartAdds: agg.cartAdds,
+          objective: agg.objective,
+        } as Record<string, number | string>,
       })
     );
 

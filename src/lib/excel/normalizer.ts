@@ -10,10 +10,22 @@ export function normalizeRow(
   const normalized: Record<string, unknown> = {};
 
   for (const [standardKey, aliases] of Object.entries(map)) {
+    // İki geçiş yap: önce dolu değeri bul, bulamazsan boş da olsa ata
+    let found = false;
     for (const alias of aliases as string[]) {
-      if (row[alias] !== undefined) {
+      if (row[alias] !== undefined && row[alias] !== null && row[alias] !== "") {
         normalized[standardKey] = row[alias];
+        found = true;
         break;
+      }
+    }
+    // Hiçbiri dolu değilse, kolon var ama boş demektir
+    if (!found) {
+      for (const alias of aliases as string[]) {
+        if (row[alias] !== undefined) {
+          normalized[standardKey] = row[alias];
+          break;
+        }
       }
     }
   }

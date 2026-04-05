@@ -10,15 +10,15 @@
     "cpc": ["CPC (all)", "CPC (cost per link click)", "CPC (tümü)", "CPC (Bağlantı Tıklaması Başına Ücret)"],
     "cpm": ["CPM (cost per 1,000 impressions)", "CPM", "CPM (1000 Gösterim Başına Ücret)"],
     "spend": ["Amount spent (TRY)", "Amount spent (USD)", "Amount spent", "Harcama miktarı", "Harcanan Tutar (TRY)", "Harcanan Tutar (USD)", "Harcanan Tutar"],
-    "roas": ["Purchase ROAS (return on ad spend)", "ROAS", "Alışveriş dönüşüm değeri"],
-    "results": ["Results", "Sonuçlar", "Alışverişler"],
+    "roas": ["Purchase ROAS (return on ad spend)", "ROAS"],
+    "results": ["Results", "Sonuçlar", "Alışverişler", "Purchases"],
     "costPerResult": ["Cost per result", "Sonuç başına maliyet", "Alışveriş Başına Ücret"],
     "frequency": ["Frequency", "Sıklık"],
-    "conversions": ["Purchases", "Alışverişler"],
     "conversionValue": ["Purchase conversion value", "Alışveriş dönüşüm değeri"],
     "cartAdds": ["Adds to cart", "Sepete Eklemeler"],
     "leads": ["Leads", "Potansiyel Müşteriler"],
-    "videoViews": ["Video views", "Görüntülemeler"]
+    "videoViews": ["Video views", "Görüntülemeler"],
+    "objective": ["Reklam Verme Amacı", "Campaign Objective", "Objective"]
   },
   "GOOGLE": {
     "campaignName": ["Campaign", "Campaign name", "Kampanya", "Kampanya Adı"],
