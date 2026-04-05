@@ -1,0 +1,32 @@
+{
+  "META": {
+    "campaignName": ["Campaign name", "Campaign Name", "Kampanya adı"],
+    "adSetName": ["Ad set name", "Ad Set Name"],
+    "adName": ["Ad name", "Ad Name"],
+    "impressions": ["Impressions", "Gösterim"],
+    "reach": ["Reach", "Erişim"],
+    "clicks": ["Clicks (all)", "Link clicks", "Tıklama"],
+    "ctr": ["CTR (all)", "CTR"],
+    "cpc": ["CPC (all)", "CPC (cost per link click)"],
+    "cpm": ["CPM (cost per 1,000 impressions)", "CPM"],
+    "spend": ["Amount spent (TRY)", "Amount spent (USD)", "Harcama miktarı"],
+    "roas": ["Purchase ROAS (return on ad spend)", "ROAS"],
+    "results": ["Results", "Sonuçlar"],
+    "costPerResult": ["Cost per result", "Sonuç başına maliyet"],
+    "frequency": ["Frequency", "Sıklık"]
+  },
+  "GOOGLE": {
+    "campaignName": ["Campaign", "Campaign name", "Kampanya"],
+    "adGroup": ["Ad group", "Ad Group"],
+    "impressions": ["Impressions", "Görüntülenme"],
+    "clicks": ["Clicks", "Tıklama"],
+    "ctr": ["CTR", "TO"],
+    "avgCpc": ["Avg. CPC", "Ort. TBM"],
+    "spend": ["Cost", "Maliyet"],
+    "conversions": ["Conversions", "Dönüşümler"],
+    "convRate": ["Conv. rate", "Dön. oranı"],
+    "costPerConv": ["Cost / conv.", "Dön. başına maliyet"],
+    "roas": ["Conv. value/cost", "ROAS"],
+    "impressionShare": ["Search impr. share", "Görüntülenme payı"]
+  }
+}

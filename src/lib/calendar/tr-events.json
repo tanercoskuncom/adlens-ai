@@ -1,0 +1,124 @@
+{
+  "events": [
+    {
+      "name": "Sevgililer Günü",
+      "month": 2,
+      "day": 14,
+      "sectors": ["ecommerce", "general"],
+      "impact": "Hediye ve aksesuar kategorilerinde ROAS %30-50 artışı beklenir",
+      "suggestion": "Hediye sepeti kampanyaları açın. Retargeting bütçesini %20 artırın. Romantik kreatifler hazırlayın."
+    },
+    {
+      "name": "Dünya Kadınlar Günü",
+      "month": 3,
+      "day": 8,
+      "sectors": ["ecommerce", "general"],
+      "impact": "Kozmetik, aksesuar ve deneyim kategorilerinde satış artışı",
+      "suggestion": "Kadın hedefli kampanyalarda bütçeyi %15 artırın. Özel indirim kodları hazırlayın."
+    },
+    {
+      "name": "Ramazan Başlangıcı",
+      "month": 3,
+      "day": 1,
+      "sectors": ["ecommerce", "food", "general"],
+      "impact": "Gıda ve ev kategorilerinde ROAS ortalama %40 artışı. İftar saatlerinde trafik pik yapıyor.",
+      "suggestion": "Ad schedule'ı iftar saatlerine (17:00-21:00) yoğunlaştırın. Gıda ve mutfak ürünlerinde bütçe artırın."
+    },
+    {
+      "name": "Ramazan Bayramı",
+      "month": 3,
+      "day": 30,
+      "sectors": ["ecommerce", "travel", "general"],
+      "impact": "Tatil ve seyahat kategorilerinde %50+ artış. Hediye alışverişi yoğunluğu.",
+      "suggestion": "Bayram öncesi 1 hafta retargeting bütçesini 2x yapın. Kargo kampanyaları öne çıkarın."
+    },
+    {
+      "name": "23 Nisan",
+      "month": 4,
+      "day": 23,
+      "sectors": ["ecommerce", "general"],
+      "impact": "Çocuk kategorisinde satış artışı",
+      "suggestion": "Çocuk ürünleri kampanyaları açın. Aile hedefli kreatifler kullanın."
+    },
+    {
+      "name": "Anneler Günü",
+      "month": 5,
+      "day": 11,
+      "sectors": ["ecommerce", "general"],
+      "impact": "Hediye kategorilerinde en yüksek ROAS dönemlerinden biri. Çiçek ve aksesuar öne çıkar.",
+      "suggestion": "Anneler Günü özel koleksiyonu oluşturun. 1 hafta öncesinden awareness kampanyası başlatın."
+    },
+    {
+      "name": "Babalar Günü",
+      "month": 6,
+      "day": 15,
+      "sectors": ["ecommerce", "general"],
+      "impact": "Teknoloji, giyim ve aksesuar kategorilerinde satış artışı",
+      "suggestion": "Erkek hedefli hediye kampanyaları açın. Cross-sell fırsatları değerlendirin."
+    },
+    {
+      "name": "Kurban Bayramı",
+      "month": 6,
+      "day": 7,
+      "sectors": ["ecommerce", "travel", "food", "general"],
+      "impact": "Uzun tatil dönemi — seyahat ve tatil rezervasyonları pik yapıyor",
+      "suggestion": "Bayram öncesi 2 hafta retargeting listelerini genişletin. Tatil kampanyalarını öne çıkarın."
+    },
+    {
+      "name": "Yaz İndirimleri",
+      "month": 7,
+      "day": 1,
+      "sectors": ["ecommerce", "general"],
+      "impact": "Sezon sonu indirimlerinde trafik ve dönüşüm artışı",
+      "suggestion": "Stok eritme kampanyaları açın. DPA (Dinamik Ürün Reklamları) ile retargeting yapın."
+    },
+    {
+      "name": "Okula Dönüş",
+      "month": 9,
+      "day": 1,
+      "sectors": ["ecommerce", "general"],
+      "impact": "Kırtasiye, teknoloji ve giyim kategorilerinde %30-40 artış",
+      "suggestion": "Okul kategorisi kampanyaları başlatın. Ebeveyn hedefli lookalike kitleler oluşturun."
+    },
+    {
+      "name": "29 Ekim Cumhuriyet Bayramı",
+      "month": 10,
+      "day": 29,
+      "sectors": ["ecommerce", "general"],
+      "impact": "Kampanya indirimleri dönemi. Kısa tatil = online alışveriş artışı.",
+      "suggestion": "Bayram indirimi kampanyaları hazırlayın. E-mail listelerini önceden segmente edin."
+    },
+    {
+      "name": "11.11 Singles Day",
+      "month": 11,
+      "day": 11,
+      "sectors": ["ecommerce", "general"],
+      "impact": "Türkiye'de büyüyen etkinlik. E-ticaret platformlarında %60+ trafik artışı.",
+      "suggestion": "Retargeting listelerini şimdiden oluşturun. Flash sale kampanyaları planlayın. Bütçeyi %30 artırın."
+    },
+    {
+      "name": "Efsane Cuma (Black Friday)",
+      "month": 11,
+      "day": 29,
+      "sectors": ["ecommerce", "general", "b2b"],
+      "impact": "Yılın en yüksek ROAS dönemi. CPM %50-80 artıyor ama conversion rate 3x+ artıyor.",
+      "suggestion": "2 hafta öncesinden awareness kampanyası başlatın. Retargeting bütçesini 3x yapın. Kreatifler hazır olsun."
+    },
+    {
+      "name": "Cyber Monday",
+      "month": 12,
+      "day": 2,
+      "sectors": ["ecommerce", "general", "b2b"],
+      "impact": "Black Friday uzantısı — özellikle teknoloji ve dijital ürünlerde güçlü",
+      "suggestion": "Black Friday'den kalan stokları tasfiye edin. Dijital ürün kampanyaları öne çıkarın."
+    },
+    {
+      "name": "Yılbaşı / Noel",
+      "month": 12,
+      "day": 25,
+      "sectors": ["ecommerce", "general"],
+      "impact": "Hediye alışverişi pik dönemi. Son dakika alışverişçileri yüksek dönüşüm oranı sağlıyor.",
+      "suggestion": "Son dakika kampanyaları ve hızlı kargo vurgulayın. Hediye kartı promosyonları çalıştırın."
+    }
+  ]
+}
