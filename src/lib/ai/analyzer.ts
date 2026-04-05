@@ -48,7 +48,10 @@ async function analyzeSingleCampaign(
   });
 
   const text = await callClaude(prompt);
-  return extractJSON<CampaignAnalysis>(text);
+  const result = extractJSON<CampaignAnalysis>(text);
+  // AI campaignName döndürmese bile garanti et
+  result.campaignName = campaign.name;
+  return result;
 }
 
 export async function runFullAnalysis(params: {

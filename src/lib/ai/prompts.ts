@@ -55,6 +55,7 @@ Analiz kuralları:
 
 Şu formatta JSON döndür:
 {
+  "campaignName": "kampanya adını aynen yaz",
   "score": 0-100,
   "scoreReason": "skoru belirleyen 1-2 cümle",
   "status": "critical" | "needs_improvement" | "good" | "excellent",
