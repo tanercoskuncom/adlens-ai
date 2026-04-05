@@ -124,7 +124,7 @@ export default function MetaDetailPage() {
                   <span className="text-xs text-gray-500">Ort. ROAS</span>
                 </div>
                 <span className="text-xl font-bold">
-                  {metaPlatform ? `${metaPlatform.avgRoas}x` : "—"}
+                  {metaPlatform?.avgRoas ? `${metaPlatform.avgRoas}x` : "—"}
                 </span>
               </CardContent>
             </Card>
@@ -135,8 +135,8 @@ export default function MetaDetailPage() {
                   <span className="text-xs text-gray-500">Toplam Harcama</span>
                 </div>
                 <span className="text-xl font-bold">
-                  {metaPlatform
-                    ? `₺${metaPlatform.totalSpend.toLocaleString("tr-TR")}`
+                  {metaPlatform?.totalSpend != null
+                    ? `₺${Number(metaPlatform.totalSpend).toLocaleString("tr-TR")}`
                     : "—"}
                 </span>
               </CardContent>

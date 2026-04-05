@@ -124,7 +124,7 @@ export default function GoogleDetailPage() {
                   <span className="text-xs text-gray-500">Ort. ROAS</span>
                 </div>
                 <span className="text-xl font-bold">
-                  {googlePlatform ? `${googlePlatform.avgRoas}x` : "—"}
+                  {googlePlatform?.avgRoas ? `${googlePlatform.avgRoas}x` : "—"}
                 </span>
               </CardContent>
             </Card>
@@ -135,8 +135,8 @@ export default function GoogleDetailPage() {
                   <span className="text-xs text-gray-500">Toplam Harcama</span>
                 </div>
                 <span className="text-xl font-bold">
-                  {googlePlatform
-                    ? `₺${googlePlatform.totalSpend.toLocaleString("tr-TR")}`
+                  {googlePlatform?.totalSpend != null
+                    ? `₺${Number(googlePlatform.totalSpend).toLocaleString("tr-TR")}`
                     : "—"}
                 </span>
               </CardContent>
