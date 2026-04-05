@@ -81,7 +81,7 @@ export default function GoogleDetailPage() {
       : 0;
 
   const urgentCount = googleCampaigns.reduce(
-    (sum, c) => sum + c.actions.filter((a) => a.priority === "urgent").length,
+    (sum, c) => sum + (c.actions ?? []).filter((a) => a.priority === "urgent").length,
     0
   );
 

@@ -81,7 +81,7 @@ export default function MetaDetailPage() {
       : 0;
 
   const urgentCount = metaCampaigns.reduce(
-    (sum, c) => sum + c.actions.filter((a) => a.priority === "urgent").length,
+    (sum, c) => sum + (c.actions ?? []).filter((a) => a.priority === "urgent").length,
     0
   );
 

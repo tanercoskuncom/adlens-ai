@@ -172,7 +172,7 @@ export function CampaignTable({ campaigns, onCampaignClick }: CampaignTableProps
                           Aksiyonlar
                         </h4>
                         <ul className="text-sm text-gray-600 space-y-1">
-                          {campaign.actions.map((a, i) => (
+                          {(campaign.actions ?? []).map((a, i) => (
                             <li key={i} className="flex items-start gap-1">
                               <span className="text-blue-500 mt-0.5">→</span>
                               {a.action}
