@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-type Platform = "overview" | "meta" | "google" | "compare";
+type Platform = "overview" | "meta" | "google" | "compare" | "report";
 
 interface PlatformTab {
   key: Platform;
@@ -69,6 +69,14 @@ export function PlatformLayout({
       activeClass: "border-indigo-600 bg-indigo-50",
     });
   }
+
+  tabs.push({
+    key: "report",
+    label: "Performans Raporu",
+    href: `${base}/report`,
+    color: "text-emerald-600",
+    activeClass: "border-emerald-600 bg-emerald-50",
+  });
 
   return (
     <div>
