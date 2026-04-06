@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     // Toplanabilir metrikler: clicks, conversions, cartAdds
     // Toplam satır: kampanya adı boş = genel toplam
 
-    const campaignAgg = new Map<string, {
+    interface CampaignAgg {
       spend: number;
       reach: number;
       impressions: number;
@@ -123,11 +123,13 @@ export async function POST(req: NextRequest) {
       cpc: number;
       cpm: number;
       roas: number;
-      results: number;
       cartAdds: number;
       rowCount: number;
       objective: string;
-    }>();
+      dailyBudget: number;
+    }
+
+    const campaignAgg = new Map<string, CampaignAgg>();
 
     // Genel toplam satırını bul (kampanya adı boş ama metrikler dolu)
     let grandTotal: Record<string, unknown> | null = null;
@@ -148,7 +150,7 @@ export async function POST(req: NextRequest) {
           spend: 0, reach: 0, impressions: 0, clicks: 0,
           conversions: 0, conversionValue: 0, costPerResult: 0,
           frequency: 0, ctr: 0, cpc: 0, cpm: 0, roas: 0,
-          results: 0, cartAdds: 0, rowCount: 0, objective: "",
+          cartAdds: 0, rowCount: 0, objective: "", dailyBudget: 0,
         });
       }
 
@@ -164,17 +166,18 @@ export async function POST(req: NextRequest) {
       agg.cartAdds += toNum(row.cartAdds);
       agg.rowCount++;
 
-      // Objective - normalized row'dan al
+      // Objective ve bütçe - ilk dolu değeri al
       if (!agg.objective) {
         const obj = String(row.objective ?? "").trim();
         if (obj) agg.objective = obj;
       }
+      if (agg.dailyBudget === 0) {
+        const budget = toNum(row.campaignBudget);
+        if (budget > 0) agg.dailyBudget = budget;
+      }
 
-      // Eğer satırda direkt spend/reach/impressions varsa (non-detail format)
-      // bunlar zaten toplanıyor.
-      // Oran metrikleri (ctr, cpc, cpm, roas, frequency) sadece toplam satırlarından al
+      // Eğer satırda direkt spend varsa, oran metriklerini de al
       if (toNum(row.spend) > 0) {
-        // Bu satırda spend varsa, oran metrikleri de geçerli
         if (toNum(row.ctr) > 0) agg.ctr = toNum(row.ctr);
         if (toNum(row.cpc) > 0) agg.cpc = toNum(row.cpc);
         if (toNum(row.cpm) > 0) agg.cpm = toNum(row.cpm);
@@ -184,33 +187,46 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Eğer kampanyaların spend'i 0 ama genel toplam varsa,
-    // mevcut metriklerden oransal dağıtım yap
-    if (grandTotal && campaignAgg.size > 0) {
+    // ─── Genel toplamdan kampanya bazlı dağıtım ───
+    // Eğer kampanyaların kendi spend'i 0 ama genel toplam varsa dağıt
+    const anySpendZero = Array.from(campaignAgg.values()).some(a => a.spend === 0);
+
+    if (grandTotal && campaignAgg.size > 0 && anySpendZero) {
       const totalSpend = toNum(grandTotal.spend);
       const totalReach = toNum(grandTotal.reach);
       const totalImpressions = toNum(grandTotal.impressions);
-      const totalFrequency = toNum(grandTotal.frequency);
-      const totalConversions = toNum(grandTotal.results);
       const totalConvValue = toNum(grandTotal.conversionValue);
-      const totalCostPerResult = toNum(grandTotal.costPerResult);
 
-      // Kampanyaların toplam click'ini hesapla
-      let allClicks = 0;
+      // Günlük bütçe toplamı (bütçesi bilinenler)
+      let knownBudgetTotal = 0;
+      let unknownBudgetCount = 0;
       for (const agg of campaignAgg.values()) {
-        allClicks += agg.clicks;
+        if (agg.dailyBudget > 0) {
+          knownBudgetTotal += agg.dailyBudget;
+        } else {
+          unknownBudgetCount++;
+        }
       }
 
-      // Toplam conversion'larını hesapla
+      // Bütçesi bilinmeyenler için ortalama bütçe tahmin et
+      const avgBudget = knownBudgetTotal > 0 && unknownBudgetCount > 0
+        ? knownBudgetTotal / (campaignAgg.size - unknownBudgetCount)
+        : 0;
+
+      // Toplam tahmini bütçe
+      const totalEstBudget = knownBudgetTotal + (avgBudget * unknownBudgetCount);
+
+      // Toplam conversion
       let allConversions = 0;
       for (const agg of campaignAgg.values()) {
         allConversions += agg.conversions;
       }
 
       for (const agg of campaignAgg.values()) {
-        // Eğer spend 0 ise, click oranına göre dağıt
-        if (agg.spend === 0 && totalSpend > 0 && allClicks > 0) {
-          const ratio = agg.clicks / allClicks;
+        if (agg.spend === 0 && totalSpend > 0) {
+          // Bütçe oranıyla dağıt
+          const budget = agg.dailyBudget > 0 ? agg.dailyBudget : avgBudget;
+          const ratio = totalEstBudget > 0 ? budget / totalEstBudget : 1 / campaignAgg.size;
           agg.spend = Math.round(totalSpend * ratio * 100) / 100;
           agg.reach = Math.round(totalReach * ratio);
           agg.impressions = Math.round(totalImpressions * ratio);
@@ -232,8 +248,8 @@ export async function POST(req: NextRequest) {
         if (agg.spend > 0 && agg.conversionValue > 0) {
           agg.roas = agg.conversionValue / agg.spend;
         }
-        // Eğer conversionValue yoksa ama genel toplam ROAS varsa
-        if (agg.roas === 0 && totalSpend > 0 && totalConvValue > 0 && agg.conversions > 0 && allConversions > 0) {
+        // conversionValue yoksa, toplam convValue'dan conversion oranıyla dağıt
+        if (agg.roas === 0 && totalConvValue > 0 && agg.conversions > 0 && allConversions > 0) {
           const convRatio = agg.conversions / allConversions;
           agg.conversionValue = Math.round(totalConvValue * convRatio * 100) / 100;
           agg.roas = agg.spend > 0 ? agg.conversionValue / agg.spend : 0;

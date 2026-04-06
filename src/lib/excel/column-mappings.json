@@ -18,7 +18,11 @@
     "cartAdds": ["Adds to cart", "Sepete Eklemeler"],
     "leads": ["Leads", "Potansiyel Müşteriler"],
     "videoViews": ["Video views", "Görüntülemeler"],
-    "objective": ["Reklam Verme Amacı", "Campaign Objective", "Objective"]
+    "objective": ["Reklam Verme Amacı", "Campaign Objective", "Objective"],
+    "campaignBudget": ["Kampanya Bütçesi", "Campaign Budget"],
+    "campaignBudgetType": ["Kampanya Bütçesi Türü", "Campaign Budget Type"],
+    "adSetBudget": ["Reklam Seti Bütçesi", "Ad Set Budget"],
+    "adSetBudgetType": ["Reklam Seti Bütçe Türü", "Ad Set Budget Type"]
   },
   "GOOGLE": {
     "campaignName": ["Campaign", "Campaign name", "Kampanya", "Kampanya Adı"],
