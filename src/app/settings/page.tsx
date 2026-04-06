@@ -13,13 +13,15 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { creditStore, PLANS, type PlanType } from "@/store/creditStore";
 import { settingsStore, type AppSettings } from "@/store/settingsStore";
-import { Save, Sparkles, Check } from "lucide-react";
+import { Save, Sparkles, Check, Plug, CheckCircle, Loader2, Unplug } from "lucide-react";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(settingsStore.get());
   const [currentPlan, setCurrentPlan] = useState<PlanType>("free");
   const [creditsUsed, setCreditsUsed] = useState(0);
   const [creditsTotal, setCreditsTotal] = useState(3);
+  const [metaTokenInput, setMetaTokenInput] = useState("");
+  const [metaLoading, setMetaLoading] = useState(false);
 
   useEffect(() => {
     setSettings(settingsStore.get());
@@ -29,6 +31,42 @@ export default function SettingsPage() {
     setCreditsUsed(state.used);
     setCreditsTotal(plan.monthlyCredits);
   }, []);
+
+  const connectMeta = async () => {
+    if (!metaTokenInput.trim()) return;
+    setMetaLoading(true);
+    try {
+      const res = await fetch("/api/meta/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: metaTokenInput }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Bağlantı başarısız");
+
+      const updated = settingsStore.set({
+        metaToken: metaTokenInput,
+        metaUserName: data.user?.name || "",
+      });
+      setSettings(updated);
+      setMetaTokenInput("");
+      toast.success("Meta hesabı bağlandı!", {
+        description: `${data.user?.name} olarak ${data.accounts.length} hesap erişimi var.`,
+      });
+    } catch (err) {
+      toast.error("Meta bağlantı hatası", {
+        description: err instanceof Error ? err.message : "Token geçersiz olabilir",
+      });
+    } finally {
+      setMetaLoading(false);
+    }
+  };
+
+  const disconnectMeta = () => {
+    const updated = settingsStore.set({ metaToken: "", metaUserName: "" });
+    setSettings(updated);
+    toast.success("Meta bağlantısı kesildi");
+  };
 
   const updateSetting = <K extends keyof AppSettings>(
     key: K,
@@ -208,6 +246,66 @@ export default function SettingsPage() {
                 onCheckedChange={(v) => updateSetting("weeklyEmail", v)}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Meta Bağlantısı */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plug className="w-5 h-5 text-blue-500" />
+              Meta Ads Bağlantısı
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {settings.metaToken ? (
+              <>
+                <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-800">
+                      {settings.metaUserName || "Meta"} hesabı bağlı
+                    </p>
+                    <p className="text-xs text-green-600 mt-0.5">
+                      Token kayıtlı — yeni analizlerde otomatik kullanılacak
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={disconnectMeta}
+                    className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Unplug className="w-3 h-3" />
+                    Kes
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="metaToken">Meta Access Token</Label>
+                  <Input
+                    id="metaToken"
+                    type="password"
+                    placeholder="EAAxxxxxxx..."
+                    value={metaTokenInput}
+                    onChange={(e) => setMetaTokenInput(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-400">
+                    Meta Business Suite &rarr; Business Settings &rarr; System Users &rarr; Generate Token
+                  </p>
+                </div>
+                <Button
+                  onClick={connectMeta}
+                  disabled={metaLoading || !metaTokenInput.trim()}
+                  className="w-full gap-2"
+                >
+                  {metaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plug className="w-4 h-4" />}
+                  {metaLoading ? "Bağlanıyor..." : "Meta Hesabını Bağla"}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 

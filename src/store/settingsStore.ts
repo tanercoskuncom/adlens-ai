@@ -5,6 +5,8 @@ export interface AppSettings {
   language: "tr" | "en";
   turkeyMarket: boolean;
   weeklyEmail: boolean;
+  metaToken: string;
+  metaUserName: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -12,6 +14,8 @@ const DEFAULTS: AppSettings = {
   language: "tr",
   turkeyMarket: true,
   weeklyEmail: false,
+  metaToken: "",
+  metaUserName: "",
 };
 
 function load(): AppSettings {

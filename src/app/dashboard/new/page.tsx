@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { FileDropzone, type UploadedFile } from "@/components/upload/FileDropzon
 import { GDPRConsent } from "@/components/upload/GDPRConsent";
 import { analysisStore } from "@/store/analysisStore";
 import { creditStore } from "@/store/creditStore";
+import { settingsStore } from "@/store/settingsStore";
 import { toast } from "sonner";
 import {
   Upload,
@@ -71,6 +72,32 @@ export default function NewAnalysisPage() {
   });
   const [activeOnly, setActiveOnly] = useState(true);
 
+  // Kayıtlı Meta token varsa otomatik bağlan
+  useEffect(() => {
+    const saved = settingsStore.get();
+    if (saved.metaToken) {
+      setMetaToken(saved.metaToken);
+      setMetaUser(saved.metaUserName);
+      // Hesapları otomatik yükle
+      fetch("/api/meta/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: saved.metaToken }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setMetaAccounts(data.accounts);
+            setMetaConnected(true);
+            setSourceMode("meta");
+          }
+        })
+        .catch(() => {
+          // Token süresi dolmuş olabilir
+        });
+    }
+  }, []);
+
   const readyFiles = files.filter((f) => f.status === "ready");
   const canProceedExcel = readyFiles.length > 0 && gdprConfirmed;
   const canProceedMeta = metaConnected && selectedAccount && gdprConfirmed;
@@ -103,6 +130,8 @@ export default function NewAnalysisPage() {
       setMetaAccounts(data.accounts);
       setMetaUser(data.user?.name || "");
       setMetaConnected(true);
+      // Token'ı kaydet
+      settingsStore.set({ metaToken, metaUserName: data.user?.name || "" });
       toast.success("Meta hesabı bağlandı!", {
         description: `${data.accounts.length} reklam hesabı bulundu.`,
       });
