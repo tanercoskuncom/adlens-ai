@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { creditStore, PLANS, type PlanType } from "@/store/creditStore";
 import { settingsStore, type AppSettings } from "@/store/settingsStore";
-import { Save, Sparkles, Check, Plug, CheckCircle, Loader2, Unplug } from "lucide-react";
+import { Save, Sparkles, Check, Plug, CheckCircle, Loader2, Unplug, BarChart3 } from "lucide-react";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(settingsStore.get());
@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [creditsTotal, setCreditsTotal] = useState(3);
   const [metaTokenInput, setMetaTokenInput] = useState("");
   const [metaLoading, setMetaLoading] = useState(false);
+  const [ga4Loading, setGa4Loading] = useState(false);
 
   useEffect(() => {
     setSettings(settingsStore.get());
@@ -30,6 +31,29 @@ export default function SettingsPage() {
     setCurrentPlan(state.plan);
     setCreditsUsed(state.used);
     setCreditsTotal(plan.monthlyCredits);
+
+    // Handle GA4 OAuth callback params
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("ga4_success") === "1") {
+      const updated = settingsStore.set({
+        ga4AccessToken: params.get("ga4_access_token") || "",
+        ga4RefreshToken: params.get("ga4_refresh_token") || "",
+        ga4Email: params.get("ga4_email") || "",
+        ga4Name: params.get("ga4_name") || "",
+      });
+      setSettings(updated);
+      toast.success("Google Analytics baglandi!", {
+        description: `${params.get("ga4_email")} hesabi baglandi.`,
+      });
+      // Clean URL
+      window.history.replaceState({}, "", "/settings");
+    }
+    if (params.get("ga4_error")) {
+      toast.error("Google Analytics baglanti hatasi", {
+        description: params.get("ga4_error") || "",
+      });
+      window.history.replaceState({}, "", "/settings");
+    }
   }, []);
 
   const connectMeta = async () => {
@@ -60,6 +84,37 @@ export default function SettingsPage() {
     } finally {
       setMetaLoading(false);
     }
+  };
+
+  const connectGA4 = async () => {
+    setGa4Loading(true);
+    try {
+      const res = await fetch("/api/ga4/auth");
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || "OAuth URL alinamadi");
+      }
+    } catch (err) {
+      toast.error("Google Analytics baglanti hatasi", {
+        description: err instanceof Error ? err.message : "Bir hata olustu",
+      });
+      setGa4Loading(false);
+    }
+  };
+
+  const disconnectGA4 = () => {
+    const updated = settingsStore.set({
+      ga4AccessToken: "",
+      ga4RefreshToken: "",
+      ga4Email: "",
+      ga4Name: "",
+      ga4PropertyId: "",
+      ga4PropertyName: "",
+    });
+    setSettings(updated);
+    toast.success("Google Analytics baglantisi kesildi");
   };
 
   const disconnectMeta = () => {
@@ -304,6 +359,61 @@ export default function SettingsPage() {
                   {metaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plug className="w-4 h-4" />}
                   {metaLoading ? "Bağlanıyor..." : "Meta Hesabını Bağla"}
                 </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Google Analytics Baglantisi */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-orange-500" />
+              Google Analytics 4 Baglantisi
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {settings.ga4RefreshToken ? (
+              <>
+                <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-800">
+                      {settings.ga4Email || settings.ga4Name || "Google"} hesabi bagli
+                    </p>
+                    <p className="text-xs text-green-600 mt-0.5">
+                      {settings.ga4PropertyName
+                        ? `Property: ${settings.ga4PropertyName}`
+                        : "Property secimi yapilmadi — rapor olusturma sirasinda secilebilir"}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={disconnectGA4}
+                    className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Unplug className="w-3 h-3" />
+                    Kes
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500">
+                  Google hesabinizla baglanti kurarak GA4 verilerinizi performans raporlarinda kullanabilirsiniz.
+                </p>
+                <Button
+                  onClick={connectGA4}
+                  disabled={ga4Loading}
+                  className="w-full gap-2"
+                >
+                  {ga4Loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
+                  {ga4Loading ? "Yonlendiriliyor..." : "Google ile Baglan"}
+                </Button>
+                <p className="text-xs text-gray-400">
+                  Google OAuth2 ile guvenli baglanti. Sadece Analytics okuma yetkisi istenir.
+                </p>
               </>
             )}
           </CardContent>

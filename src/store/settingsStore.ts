@@ -7,6 +7,12 @@ export interface AppSettings {
   weeklyEmail: boolean;
   metaToken: string;
   metaUserName: string;
+  ga4AccessToken: string;
+  ga4RefreshToken: string;
+  ga4Email: string;
+  ga4Name: string;
+  ga4PropertyId: string;
+  ga4PropertyName: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -16,6 +22,12 @@ const DEFAULTS: AppSettings = {
   weeklyEmail: false,
   metaToken: "",
   metaUserName: "",
+  ga4AccessToken: "",
+  ga4RefreshToken: "",
+  ga4Email: "",
+  ga4Name: "",
+  ga4PropertyId: "",
+  ga4PropertyName: "",
 };
 
 function load(): AppSettings {

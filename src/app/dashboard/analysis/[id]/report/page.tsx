@@ -14,14 +14,16 @@ import { ReportScoreChart } from "@/components/reports/sections/ReportScoreChart
 import { ReportObjectiveBreakdown } from "@/components/reports/sections/ReportObjectiveBreakdown";
 import { ReportActionPlan } from "@/components/reports/sections/ReportActionPlan";
 import { ReportNewCampaigns } from "@/components/reports/sections/ReportNewCampaigns";
+import { ReportGA4Overview } from "@/components/reports/sections/ReportGA4Overview";
+import { ReportGA4Demographics } from "@/components/reports/sections/ReportGA4Demographics";
+import { settingsStore } from "@/store/settingsStore";
+import type { GA4ReportData } from "@/lib/ga4/client";
 import {
   Download,
   Loader2,
   AlertCircle,
   BarChart3,
   Target,
-  Zap,
-  Lightbulb,
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,12 +34,42 @@ export default function ReportPage() {
   const [analysis, setAnalysis] = useState<SavedAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [ga4Data, setGa4Data] = useState<GA4ReportData | null>(null);
+  const [ga4Loading, setGa4Loading] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const data = analysisStore.getById(id);
     setAnalysis(data || null);
     setLoading(false);
+
+    // Try to load GA4 data if connected
+    const settings = settingsStore.get();
+    if (settings.ga4RefreshToken && settings.ga4PropertyId) {
+      setGa4Loading(true);
+      fetch("/api/ga4/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accessToken: settings.ga4AccessToken,
+          refreshToken: settings.ga4RefreshToken,
+          propertyId: settings.ga4PropertyId,
+          startDate: "30daysAgo",
+          endDate: "today",
+        }),
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          if (res.success) {
+            setGa4Data(res.report);
+            if (res.newAccessToken) {
+              settingsStore.set({ ga4AccessToken: res.newAccessToken });
+            }
+          }
+        })
+        .catch(console.error)
+        .finally(() => setGa4Loading(false));
+    }
   }, [id]);
 
   const handlePDFExport = async () => {
@@ -204,6 +236,25 @@ export default function ReportPage() {
             <div className="report-page-section">
               <ReportObjectiveBreakdown breakdown={overallReport.objectiveBreakdown} />
             </div>
+          )}
+
+          {/* GA4 Sections */}
+          {ga4Loading && (
+            <div className="report-page-section flex items-center justify-center py-12 bg-gray-800/40 rounded-xl">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-400 mr-3" />
+              <span className="text-gray-400">GA4 verileri yukleniyor...</span>
+            </div>
+          )}
+
+          {ga4Data && (
+            <>
+              <div className="report-page-section">
+                <ReportGA4Overview data={ga4Data} />
+              </div>
+              <div className="report-page-section">
+                <ReportGA4Demographics data={ga4Data} />
+              </div>
+            </>
           )}
 
           {/* Section 5: Score Chart */}
