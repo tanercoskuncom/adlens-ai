@@ -13,6 +13,11 @@ import {
   ChevronDown,
   ChevronRight,
   AlertTriangle,
+  ShoppingCart,
+  MousePointerClick,
+  Eye,
+  MessageCircle,
+  Target,
 } from "lucide-react";
 import type { CampaignAnalysis } from "@/types/analysis";
 
@@ -45,6 +50,46 @@ function scorePill(score: number) {
       {score}
     </span>
   );
+}
+
+const OBJECTIVE_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: typeof ShoppingCart }> = {
+  "Satış": { label: "Satış", color: "text-emerald-700", bgColor: "bg-emerald-50 border-emerald-200", icon: ShoppingCart },
+  "Trafik": { label: "Trafik", color: "text-blue-700", bgColor: "bg-blue-50 border-blue-200", icon: MousePointerClick },
+  "Bilinirlik": { label: "Bilinirlik", color: "text-purple-700", bgColor: "bg-purple-50 border-purple-200", icon: Eye },
+  "Etkileşim": { label: "Etkileşim", color: "text-orange-700", bgColor: "bg-orange-50 border-orange-200", icon: MessageCircle },
+  "Lead": { label: "Lead", color: "text-indigo-700", bgColor: "bg-indigo-50 border-indigo-200", icon: Target },
+};
+
+function objectiveBadge(objective?: string) {
+  const obj = objective || "Genel";
+  const config = OBJECTIVE_CONFIG[obj];
+  if (!config) {
+    return <Badge className="bg-gray-100 text-gray-600 text-[10px] font-medium">{obj}</Badge>;
+  }
+  return (
+    <Badge className={`${config.bgColor} ${config.color} text-[10px] font-medium border`}>
+      {config.label}
+    </Badge>
+  );
+}
+
+/** Amaca göre "ana performans metriği" döndür */
+function primaryMetric(campaign: CampaignAnalysis): { label: string; value: string } {
+  const m = campaign.metrics;
+  const obj = campaign.objective || "Satış";
+
+  switch (obj) {
+    case "Trafik":
+      return { label: "CPC", value: m?.cpc ? `₺${m.cpc.toFixed(2)}` : "—" };
+    case "Bilinirlik":
+      return { label: "CPM", value: m?.cpm ? `₺${m.cpm.toFixed(0)}` : "—" };
+    case "Etkileşim":
+      return { label: "CTR", value: m?.ctr ? `%${m.ctr.toFixed(2)}` : "—" };
+    case "Lead":
+      return { label: "CPL", value: m?.costPerResult ? `₺${m.costPerResult.toFixed(0)}` : "—" };
+    default: // Satış
+      return { label: "ROAS", value: m?.roas ? `${m.roas.toFixed(1)}x` : "—" };
+  }
 }
 
 export default function MetaDetailPage() {
@@ -99,33 +144,47 @@ export default function MetaDetailPage() {
   const metaCampaigns = (result.campaignAnalyses ?? []).filter((c) => {
     const name = (c.campaignName ?? "").toLowerCase();
     const isGoogle =
-      name.includes("google") ||
-      name.includes("search") ||
-      name.includes("shopping") ||
-      name.includes("pmax") ||
-      name.includes("display");
+      name.includes("google") || name.includes("search") ||
+      name.includes("shopping") || name.includes("pmax") || name.includes("display");
     return !isGoogle;
   });
 
   // KPI hesaplamaları
   const totalSpend = metaCampaigns.reduce((sum, c) => sum + (c.metrics?.spend ?? 0), 0);
   const totalReach = metaCampaigns.reduce((sum, c) => sum + (c.metrics?.reach ?? 0), 0);
-  const totalImpressions = metaCampaigns.reduce((sum, c) => sum + (c.metrics?.impressions ?? 0), 0);
-  const totalConvValue = metaCampaigns.reduce((sum, c) => sum + (c.metrics?.conversions ?? 0), 0);
-  const avgRoas = totalSpend > 0
-    ? metaCampaigns.reduce((sum, c) => sum + (c.metrics?.roas ?? 0), 0) / metaCampaigns.length
+
+  // Sadece satış kampanyaları için ROAS hesapla
+  const salesCampaigns = metaCampaigns.filter((c) => (c.objective || "Satış") === "Satış");
+  const avgRoas = salesCampaigns.length > 0
+    ? salesCampaigns.reduce((sum, c) => sum + (c.metrics?.roas ?? 0), 0) / salesCampaigns.length
     : 0;
+  const totalConversions = salesCampaigns.reduce((sum, c) => sum + (c.metrics?.conversions ?? 0), 0);
+
   const avgFreq = metaCampaigns.length > 0
     ? metaCampaigns.reduce((sum, c) => sum + (c.metrics?.frequency ?? 0), 0) / metaCampaigns.length
     : 0;
-  const avgScore = metaCampaigns.length > 0
-    ? Math.round(metaCampaigns.reduce((sum, c) => sum + (c.score ?? 0), 0) / metaCampaigns.length)
-    : 0;
 
   const metaPlatform = result.overallReport.platformComparison?.meta;
+  const objBreakdown = result.overallReport.objectiveBreakdown;
 
   const freqColor = avgFreq > 4 ? "text-red-500" : avgFreq > 3 ? "text-amber-500" : "text-green-500";
   const freqLabel = avgFreq > 4 ? "Yüksek" : avgFreq > 3 ? "Dikkat" : "İdeal aralıkta";
+
+  // Kampanyaları amaca göre grupla
+  const objectiveGroups = new Map<string, CampaignAnalysis[]>();
+  for (const c of metaCampaigns) {
+    const obj = c.objective || "Satış";
+    if (!objectiveGroups.has(obj)) objectiveGroups.set(obj, []);
+    objectiveGroups.get(obj)!.push(c);
+  }
+
+  // Sıralama: Satış > Trafik > Bilinirlik > Etkileşim > Lead > diğer
+  const objectiveOrder = ["Satış", "Trafik", "Bilinirlik", "Etkileşim", "Lead"];
+  const sortedGroups = [...objectiveGroups.entries()].sort((a, b) => {
+    const ai = objectiveOrder.indexOf(a[0]);
+    const bi = objectiveOrder.indexOf(b[0]);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
 
   return (
     <>
@@ -141,13 +200,18 @@ export default function MetaDetailPage() {
               <p className="text-2xl font-bold">{fmtNum(totalSpend, "currency")}</p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-[3px] bg-blue-500" />
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Ort. ROAS</p>
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-emerald-500" />
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                Ort. ROAS <span className="text-[9px] text-gray-300">(Satış)</span>
+              </p>
               <p className="text-2xl font-bold">{fmtNum(avgRoas, "roas")}</p>
+              {totalConversions > 0 && (
+                <p className="text-xs text-gray-400 mt-1">{totalConversions} dönüşüm</p>
+              )}
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 relative overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-[3px] bg-blue-500" />
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Reach</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Toplam Reach</p>
               <p className="text-2xl font-bold">{fmtNum(totalReach, "number")}</p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 relative overflow-hidden">
@@ -157,6 +221,45 @@ export default function MetaDetailPage() {
               <p className={`text-xs mt-1 ${freqColor}`}>— {freqLabel}</p>
             </div>
           </div>
+
+          {/* Objective Breakdown */}
+          {objBreakdown && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {objBreakdown.sales && objBreakdown.sales.campaignCount > 0 && (
+                <Card className="border-emerald-200">
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ShoppingCart className="w-4 h-4 text-emerald-600" />
+                      <span className="text-xs font-semibold text-emerald-700">Satış Kampanyaları ({objBreakdown.sales.campaignCount})</span>
+                    </div>
+                    <p className="text-xs text-gray-600 leading-relaxed">{objBreakdown.sales.assessment}</p>
+                  </CardContent>
+                </Card>
+              )}
+              {objBreakdown.traffic && objBreakdown.traffic.campaignCount > 0 && (
+                <Card className="border-blue-200">
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MousePointerClick className="w-4 h-4 text-blue-600" />
+                      <span className="text-xs font-semibold text-blue-700">Trafik Kampanyaları ({objBreakdown.traffic.campaignCount})</span>
+                    </div>
+                    <p className="text-xs text-gray-600 leading-relaxed">{objBreakdown.traffic.assessment}</p>
+                  </CardContent>
+                </Card>
+              )}
+              {objBreakdown.awareness && objBreakdown.awareness.campaignCount > 0 && (
+                <Card className="border-purple-200">
+                  <CardContent className="pt-4 pb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Eye className="w-4 h-4 text-purple-600" />
+                      <span className="text-xs font-semibold text-purple-700">Bilinirlik Kampanyaları ({objBreakdown.awareness.campaignCount})</span>
+                    </div>
+                    <p className="text-xs text-gray-600 leading-relaxed">{objBreakdown.awareness.assessment}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
 
           {/* Platform Assessment */}
           {metaPlatform?.assessment && (
@@ -170,74 +273,132 @@ export default function MetaDetailPage() {
             </Card>
           )}
 
-          {/* Campaign Table */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-blue-600">Meta Kampanyaları</h3>
-              <Badge className="bg-blue-100 text-blue-700">{metaCampaigns.length}</Badge>
-            </div>
+          {/* Campaign Groups by Objective */}
+          {sortedGroups.map(([objective, campaigns]) => {
+            const config = OBJECTIVE_CONFIG[objective];
+            const Icon = config?.icon || Target;
+            const groupColor = config?.color || "text-gray-700";
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="w-8 px-3 py-2.5" />
-                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Kampanya</th>
-                    <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Harcama</th>
-                    <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">ROAS</th>
-                    <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">CTR</th>
-                    <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Frequency</th>
-                    <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Reach</th>
-                    <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Dönüşüm</th>
-                    <th className="px-4 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Skor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {metaCampaigns.map((campaign) => {
-                    const isExpanded = expandedId === (campaign.campaignName ?? "");
-                    const m = campaign.metrics;
-                    const freq = m?.frequency ?? 0;
-                    const freqCellColor = freq > 4 ? "text-red-500" : freq > 3 ? "text-amber-500" : "text-green-600";
+            // Dinamik kolon başlıkları
+            const columns = getColumnsForObjective(objective);
 
-                    return (
-                      <CampaignRow
-                        key={campaign.campaignName ?? Math.random()}
-                        campaign={campaign}
-                        isExpanded={isExpanded}
-                        freqCellColor={freqCellColor}
-                        onToggle={() => setExpandedId(isExpanded ? null : (campaign.campaignName ?? ""))}
-                      />
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            return (
+              <div key={objective} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`w-4 h-4 ${groupColor}`} />
+                    <h3 className={`text-sm font-semibold ${groupColor}`}>{objective} Kampanyaları</h3>
+                  </div>
+                  <Badge className="bg-gray-100 text-gray-600">{campaigns.length}</Badge>
+                </div>
 
-            {metaCampaigns.length === 0 && (
-              <div className="py-12 text-center text-gray-400 text-sm">
-                Meta kampanyası bulunamadı.
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100">
+                        <th className="w-8 px-3 py-2.5" />
+                        <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Kampanya</th>
+                        <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Harcama</th>
+                        {columns.map((col) => (
+                          <th key={col.key} className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                            {col.label}
+                          </th>
+                        ))}
+                        <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Frequency</th>
+                        <th className="px-4 py-2.5 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Skor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {campaigns.map((campaign) => {
+                        const isExpanded = expandedId === (campaign.campaignName ?? "");
+                        return (
+                          <CampaignRow
+                            key={campaign.campaignName ?? Math.random()}
+                            campaign={campaign}
+                            columns={columns}
+                            isExpanded={isExpanded}
+                            onToggle={() => setExpandedId(isExpanded ? null : (campaign.campaignName ?? ""))}
+                          />
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            )}
-          </div>
+            );
+          })}
+
+          {metaCampaigns.length === 0 && (
+            <div className="py-12 text-center text-gray-400 text-sm">
+              Meta kampanyası bulunamadı.
+            </div>
+          )}
         </div>
       </PlatformLayout>
     </>
   );
 }
 
+interface ColumnDef {
+  key: string;
+  label: string;
+  render: (m: CampaignAnalysis["metrics"]) => string;
+}
+
+function getColumnsForObjective(objective: string): ColumnDef[] {
+  switch (objective) {
+    case "Trafik":
+      return [
+        { key: "ctr", label: "CTR", render: (m) => fmtNum(m?.ctr, "percent") },
+        { key: "cpc", label: "CPC", render: (m) => m?.cpc ? `₺${m.cpc.toFixed(2)}` : "—" },
+        { key: "clicks", label: "Tıklama", render: (m) => fmtNum(m?.clicks, "number") },
+        { key: "reach", label: "Reach", render: (m) => fmtNum(m?.reach, "number") },
+      ];
+    case "Bilinirlik":
+      return [
+        { key: "reach", label: "Reach", render: (m) => fmtNum(m?.reach, "number") },
+        { key: "cpm", label: "CPM", render: (m) => m?.cpm ? `₺${m.cpm.toFixed(0)}` : "—" },
+        { key: "impressions", label: "Gösterim", render: (m) => fmtNum(m?.impressions, "number") },
+      ];
+    case "Etkileşim":
+      return [
+        { key: "ctr", label: "CTR", render: (m) => fmtNum(m?.ctr, "percent") },
+        { key: "cpc", label: "CPC", render: (m) => m?.cpc ? `₺${m.cpc.toFixed(2)}` : "—" },
+        { key: "reach", label: "Reach", render: (m) => fmtNum(m?.reach, "number") },
+        { key: "clicks", label: "Tıklama", render: (m) => fmtNum(m?.clicks, "number") },
+      ];
+    case "Lead":
+      return [
+        { key: "conversions", label: "Lead", render: (m) => fmtNum(m?.conversions, "number") },
+        { key: "costPerResult", label: "CPL", render: (m) => m?.costPerResult ? `₺${m.costPerResult.toFixed(0)}` : "—" },
+        { key: "ctr", label: "CTR", render: (m) => fmtNum(m?.ctr, "percent") },
+        { key: "reach", label: "Reach", render: (m) => fmtNum(m?.reach, "number") },
+      ];
+    default: // Satış
+      return [
+        { key: "roas", label: "ROAS", render: (m) => fmtNum(m?.roas, "roas") },
+        { key: "ctr", label: "CTR", render: (m) => fmtNum(m?.ctr, "percent") },
+        { key: "conversions", label: "Dönüşüm", render: (m) => fmtNum(m?.conversions, "number") },
+        { key: "reach", label: "Reach", render: (m) => fmtNum(m?.reach, "number") },
+      ];
+  }
+}
+
 function CampaignRow({
   campaign,
+  columns,
   isExpanded,
-  freqCellColor,
   onToggle,
 }: {
   campaign: CampaignAnalysis;
+  columns: ColumnDef[];
   isExpanded: boolean;
-  freqCellColor: string;
   onToggle: () => void;
 }) {
   const m = campaign.metrics;
   const freq = m?.frequency ?? 0;
+  const freqColor = freq > 4 ? "text-red-500" : freq > 3 ? "text-amber-500" : "text-green-600";
+  const colCount = 4 + columns.length; // expand + name + spend + columns + freq + score
 
   return (
     <>
@@ -256,20 +417,21 @@ function CampaignRow({
           {campaign.campaignName ?? "—"}
         </td>
         <td className="px-4 py-3 text-sm text-gray-600 text-right">{fmtNum(m?.spend, "currency")}</td>
-        <td className="px-4 py-3 text-sm text-gray-600 text-right font-medium">{fmtNum(m?.roas, "roas")}</td>
-        <td className="px-4 py-3 text-sm text-gray-600 text-right">{fmtNum(m?.ctr, "percent")}</td>
-        <td className={`px-4 py-3 text-sm text-right font-medium ${freqCellColor}`}>
+        {columns.map((col) => (
+          <td key={col.key} className="px-4 py-3 text-sm text-gray-600 text-right font-medium">
+            {col.render(m)}
+          </td>
+        ))}
+        <td className={`px-4 py-3 text-sm text-right font-medium ${freqColor}`}>
           {fmtNum(freq, "freq")}
           {freq > 4 && <AlertTriangle className="w-3 h-3 inline ml-1" />}
         </td>
-        <td className="px-4 py-3 text-sm text-gray-600 text-right">{fmtNum(m?.reach, "number")}</td>
-        <td className="px-4 py-3 text-sm text-gray-600 text-right">{fmtNum(m?.conversions, "number")}</td>
         <td className="px-4 py-3 text-center">{scorePill(campaign.score ?? 0)}</td>
       </tr>
 
       {isExpanded && (
         <tr>
-          <td colSpan={9} className="bg-gray-50 p-0">
+          <td colSpan={colCount} className="bg-gray-50 p-0">
             <div className="p-5 space-y-4">
               {/* Özet */}
               <div className="p-3 bg-white rounded-lg border border-gray-200">

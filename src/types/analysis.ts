@@ -15,6 +15,7 @@ export interface CampaignMetrics {
 
 export interface CampaignAnalysis {
   campaignName: string;
+  objective?: string;
   score: number;
   scoreReason: string;
   status: "critical" | "needs_improvement" | "good" | "excellent";
@@ -23,11 +24,7 @@ export interface CampaignAnalysis {
   weaknesses: string[];
   anomalies: string[];
   metrics?: CampaignMetrics;
-  benchmarkComparison?: {
-    roas: string;
-    ctr: string;
-    cpc: string;
-  };
+  benchmarkComparison?: Record<string, string>;
   actions: ActionItem[];
 }
 
@@ -48,6 +45,11 @@ export interface OverallReport {
   worstPerformer: {
     campaignName: string;
     reason: string;
+  };
+  objectiveBreakdown?: {
+    sales?: { campaignCount: number; totalSpend: number; avgRoas: number; totalConversions: number; assessment: string };
+    traffic?: { campaignCount: number; totalSpend: number; avgCtr: number; avgCpc: number; assessment: string };
+    awareness?: { campaignCount: number; totalSpend: number; totalReach: number; avgCpm: number; assessment: string };
   };
   platformComparison?: {
     meta: { avgRoas: number; totalSpend: number; assessment: string };

@@ -4,6 +4,7 @@ import {
   buildOverallReportPrompt,
   buildActionPlanPrompt,
   buildNewCampaignPrompt,
+  normalizeObjective,
 } from "./prompts";
 import type { CampaignData } from "@/types/campaign";
 import type {
@@ -49,8 +50,9 @@ async function analyzeSingleCampaign(
 
   const text = await callClaude(prompt);
   const result = extractJSON<CampaignAnalysis>(text);
-  // AI campaignName döndürmese bile garanti et
+  // AI döndürmese bile garanti et
   result.campaignName = campaign.name;
+  result.objective = normalizeObjective(String(campaign.metrics.objective || ""));
   return result;
 }
 
@@ -120,6 +122,7 @@ export async function runFullAnalysis(params: {
       overallScore: overallReport.overallScore,
       campaignSummary: campaignAnalyses.map((ca) => ({
         name: ca.campaignName,
+        objective: ca.objective,
         score: ca.score,
         status: ca.status,
       })),
